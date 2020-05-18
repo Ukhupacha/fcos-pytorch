@@ -40,3 +40,4 @@ class R2PlusOneD(nn.Module):
         return None
 
     def forward(self, input_batch):
+        out = self._base_model(input_batch)
