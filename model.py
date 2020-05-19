@@ -269,11 +269,20 @@ class DeTrackHead(nn.Module):
             bias=False
         )
 
+        self.center_head = nn.Conv3d(
+            in_channels=in_channel_count,
+            out_channels=1,
+            kernel_size=(num_frames, 3, 3),
+            padding=(1,1,1),
+            bias=False
+        )
+
     def forward(self, input_data):
         cls_out = self.cls_head(input_data)
         cls_out_tracklet = torch.mean(cls_out, dim=2)
         reg_out = self.reg_head(input_data)
-        return cls_out, reg_out
+        center_out = self.center_head(input_data)
+        return cls_out, reg_out, center_out
 
 
 class DeTrack(nn.Module):
@@ -284,4 +293,5 @@ class DeTrack(nn.Module):
 
     def forward(self, input_data):
         out = self.backbone(input_data)
-        return out
+        cls_out, reg_out, center_out = self.head(out)
+        return cls_out, reg_out, center_out
