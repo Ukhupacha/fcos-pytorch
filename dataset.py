@@ -2,7 +2,11 @@ import os
 
 import torch
 from torchvision import datasets
-
+from torch.utils.data import Dataset
+import glob
+import numpy as np
+from PIL import Image
+from skimage import io
 from boxlist import BoxList
 
 
@@ -18,6 +22,95 @@ def has_valid_annotation(annot):
         return False
 
     return True
+
+
+def convert_to_xyxy(target):
+    xmins = target[:, :, 0]
+    ymins = target[:, :, 1]
+    w = target[:, :, 2]
+    h = target[:, :, 3]
+    xmaxs = xmins + w
+    ymaxs = ymins + h
+    xyxy = target
+    xyxy[:, :, 2] = xmaxs
+    xyxy[:, :, 3] = ymaxs
+    return xyxy
+
+
+class JTADataset(Dataset):
+    """
+    JTA Dataset handler
+    """
+
+    def __init__(self, path, split, clip_length=8, transform=None):
+        self.root = path
+        self.videos_path = os.path.join(self.root, 'frames', split)
+        self.anns_path = os.path.join(self.root, 'ann_%s' % clip_length, split)
+        self.transform = transform
+        self.clip_length = clip_length
+        self.df = 900
+        self.videos = self.get_videos()
+        self.anns = self.get_anns()
+        self.length = self.get_length()
+
+    def get_videos(self):
+        videos_folders = sorted(glob.glob(
+            os.path.join(self.videos_path, 'seq_*'),
+            recursive=False
+        ))
+        return videos_folders
+
+    def get_anns(self):
+        anns = sorted(glob.glob(
+            os.path.join(self.anns_path, '*.npy'),
+            recursive=False
+        ))
+        return anns
+
+    def get_length(self):
+        num_videos = len(self.videos)
+        length = (self.df - self.clip_length + 1) * num_videos
+        return length
+
+    def get_data(self, index):
+        video_index, starting_frame = divmod(index, self.df - self.clip_length + 1)
+        starting_frame += 1
+        video_folder = self.videos[video_index]
+        frames = [
+            os.path.join(video_folder, '{}.jpg'.format(x))
+            for x in range(starting_frame, starting_frame + self.clip_length)
+        ]
+        labels = self.get_annotation_frames(video_index, starting_frame)
+
+        return frames, labels
+
+    def get_annotation_frames(self, video_index, starting_frame):
+        annotation_file = self.anns[video_index]
+        data = np.load(annotation_file, allow_pickle=True)
+        labels = data.item().get(starting_frame)
+
+        return labels
+
+    def __getitem__(self, idx):
+        """
+        Generates one sample of data
+        :param idx:
+        :return: dictionary of clips and labels
+            clips: list of images
+            labels: mat of shape Frames x Tracklets x Bbs
+        """
+        frames, target = self.get_data(idx)
+
+        clip = [io.imread(frame) for frame in frames]
+
+        target = convert_to_xyxy(target)
+        if self.transform:
+            sample = self.transform(clip, target)
+
+        return clip, target, idx
+
+    def __len__(self):
+        return self.length
 
 
 class COCODataset(datasets.CocoDetection):
