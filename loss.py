@@ -316,6 +316,19 @@ class DeTrackLoss(nn.Module):
         self.strides = fpn_strides
         self.radius = pos_radius
 
+    def compute_bbox_areas(self, targets):
+        """
+        Computes the areas of bounding boxes in the GT
+        :param targets: Shape is Batch X num_frames X num_tracklets X 4
+        :return: Shape is Batch X num_frames x num_tracklets
+        """
+        xmins = targets[:, :, :, 0]
+        ymins = targets[:, :, :, 1]
+        xmaxs = targets[:, :, :, 2]
+        ymaxs = targets[:, :, :, 3]
+        areas = (ymaxs - ymins + 1) * (xmaxs - xmins + 1)
+        return areas
+
     def forward(self, locations, cls_pred, box_pred, center_pred, targets):
         """
         We assume that the targets are of the
@@ -326,3 +339,4 @@ class DeTrackLoss(nn.Module):
         :param targets: shape is  1 X num_frames X num_tracklets X 4
         :return:
         """
+
