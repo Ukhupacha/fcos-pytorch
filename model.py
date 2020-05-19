@@ -286,8 +286,10 @@ class DeTrackHead(nn.Module):
 
 
 class DeTrack(nn.Module):
-    def __init__(self, in_channels_head, num_frames=8, base_is_pretrained=True):
+    def __init__(self, in_channels_head, num_frames=8, base_is_pretrained=True, device='cuda'):
         super(DeTrack, self).__init__()
+        self.num_frames = num_frames
+        self.device = device
         self.backbone = R2PlusOneD(is_pretrained=base_is_pretrained)
         self.head = DeTrackHead(in_channel_count=in_channels_head, num_frames=num_frames)
 
@@ -295,3 +297,21 @@ class DeTrack(nn.Module):
         out = self.backbone(input_data)
         cls_out, reg_out, center_out = self.head(out)
         return cls_out, reg_out, center_out
+
+    def compute_location(self, cls_out, stride):
+        _, _, num_frames, height, width = cls_out.Size()
+        shift_x = torch.arange(
+            0, width * stride, step=stride, dtype=torch.float32, device=self.device
+        )
+        shift_y = torch.arange(
+            0, height * stride, step=stride, dtype=torch.float32, device=self.device
+        )
+        shift_z = torch.arange(self.num_frames, dtype=torch.float32, device=self.device)
+        shift_y, shift_x, shift_z = torch.meshgrid(shift_y, shift_x, shift_z)
+        shift_x = shift_x.reshape(-1)
+        shift_y = shift_y.reshape(-1)
+        shift_z = shift_z.reshape(-1)
+        location = torch.stack((shift_x + stride//2, shift_y + stride//2, shift_z), 1)
+        return location
+
+
