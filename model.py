@@ -6,6 +6,7 @@ from torch.nn import functional as F
 
 from loss import FCOSLoss
 from postprocess import FCOSPostprocessor
+from backbone.r2plus1d import R2PlusOneD
 
 
 class Scale(nn.Module):
@@ -63,7 +64,7 @@ class FPN(nn.Module):
         outs = [self.out_convs[-1](inner)]
 
         for feat, inner_conv, out_conv in zip(
-            inputs[:-1][::-1], self.inner_convs[:-1][::-1], self.out_convs[:-1][::-1]
+                inputs[:-1][::-1], self.inner_convs[:-1][::-1], self.out_convs[:-1][::-1]
         ):
             if inner_conv is None:
                 continue
@@ -247,3 +248,40 @@ class FCOS(nn.Module):
         location = torch.stack((shift_x, shift_y), 1) + stride // 2
 
         return location
+
+
+class DeTrackHead(nn.Module):
+    def __init__(self, in_channel_count, num_frames):
+        super(DeTrackHead, self).__init__()
+        self.cls_head = nn.Conv3d(
+            in_channels=in_channel_count,
+            out_channels=2,
+            kernel_size=(num_frames, 3, 3),
+            padding=(1, 1, 1),
+            bias=False
+        )
+
+        self.reg_head = nn.Conv3d(
+            in_channels=in_channel_count,
+            out_channels=4,
+            kernel_size=(num_frames, 3, 3),
+            padding=(1, 1, 1),
+            bias=False
+        )
+
+    def forward(self, input_data):
+        cls_out = self.cls_head(input_data)
+        cls_out_tracklet = torch.mean(cls_out, dim=2)
+        reg_out = self.reg_head(input_data)
+        return cls_out, reg_out
+
+
+class DeTrack(nn.Module):
+    def __init__(self, in_channels_head, num_frames=8, base_is_pretrained=True):
+        super(DeTrack, self).__init__()
+        self.backbone = R2PlusOneD(is_pretrained=base_is_pretrained)
+        self.head = DeTrackHead(in_channel_count=in_channels_head, num_frames=num_frames)
+
+    def forward(self, input_data):
+        out = self.backbone(input_data)
+        return out
