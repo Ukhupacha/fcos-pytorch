@@ -263,7 +263,7 @@ class DeTrackHead(nn.Module):
 
         self.reg_head = nn.Conv3d(
             in_channels=in_channel_count,
-            out_channels=4,
+            out_channels=6,
             kernel_size=(num_frames, 3, 3),
             padding=(1, 1, 1),
             bias=False
