@@ -298,3 +298,31 @@ class FCOSLoss(nn.Module):
             center_loss = center_flat.sum()
 
         return cls_loss, box_loss, center_loss
+
+
+class DeTrackLoss(nn.Module):
+    def __init__(
+        self, sizes, gamma, alpha, iou_loss_type, center_sample, fpn_strides, pos_radius
+    ):
+        super().__init__()
+
+        self.sizes = sizes
+
+        self.cls_loss = SigmoidFocalLoss(gamma, alpha)
+        self.box_loss = IOULoss(iou_loss_type)
+        self.center_loss = nn.BCEWithLogitsLoss()
+
+        self.center_sample = center_sample
+        self.strides = fpn_strides
+        self.radius = pos_radius
+
+    def forward(self, locations, cls_pred, box_pred, center_pred, targets):
+        """
+        We assume that the targets are of the
+        :param locations: shape is (feat_height X feat_width X num_frames) X 3
+        :param cls_pred: shape is Batch X 2 X num_frames X feat_height X feat_width
+        :param box_pred: shape is Batch X 6 X num_frames X feat_height x feat_width
+        :param center_pred: shape is Batch X 1 X num_frames X feat_height x feat_width
+        :param targets: shape is  1 X num_frames X num_tracklets X 4
+        :return:
+        """
