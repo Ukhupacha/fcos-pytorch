@@ -299,7 +299,7 @@ class DeTrack(nn.Module):
         return cls_out, reg_out, center_out
 
     def compute_location(self, cls_out, stride):
-        _, _, num_frames, height, width = cls_out.Size()
+        _, _, num_frames, height, width = cls_out.size()
         shift_x = torch.arange(
             0, width * stride, step=stride, dtype=torch.float32, device=self.device
         )
