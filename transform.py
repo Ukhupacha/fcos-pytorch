@@ -83,6 +83,18 @@ class ToTensor:
         return F.to_tensor(img), target
 
 
+class ToTensorClip(object):
+    def __call__(self, clip, target):
+        # swap color axis because
+        # numpy image: H x W x C
+        # torch image: C X H X W
+        frames = []
+        for image in clip:
+            frames.append(image.transpose((2, 0, 1)))
+
+        return torch.IntTensor(clip), target
+
+
 class Normalize:
     def __init__(self, mean, std):
         self.mean = mean

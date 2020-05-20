@@ -45,5 +45,7 @@ def get_args():
     args.center_sample = True
     args.pos_radius = 1.5
     args.iou_loss_type = 'giou'
+    args.split = 'train'
+    args.clip_length = 8
 
     return args
