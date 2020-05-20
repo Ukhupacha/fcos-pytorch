@@ -330,6 +330,7 @@ class DeTrackLoss(nn.Module):
         return areas
 
     def compute_cls_targets(self, locations,targets):
+        #TODO: NEEDS TO BE HEAVILY TESTED
         targets_new = targets.newtensor(targets)
         targets_new = targets_new.squeeze(0)
         targets_new = targets_new.unsqueeze(1)
