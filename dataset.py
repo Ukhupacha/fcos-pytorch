@@ -45,7 +45,7 @@ class JTADataset(Dataset):
     def __init__(self, path, split, clip_length=8, transform=None):
         self.root = path
         self.videos_path = os.path.join(self.root, 'frames', split)
-        self.anns_path = os.path.join(self.root, 'ann_%s' % clip_length, split)
+        self.anns_path = os.path.join(self.root, 'anns_%s' % clip_length, split)
         self.transform = transform
         self.clip_length = clip_length
         self.df = 900
@@ -62,7 +62,7 @@ class JTADataset(Dataset):
 
     def get_anns(self):
         anns = sorted(glob.glob(
-            os.path.join(self.anns_path, '*.npy'),
+            os.path.join(self.anns_path, '*.npz'),
             recursive=False
         ))
         return anns
@@ -86,8 +86,8 @@ class JTADataset(Dataset):
 
     def get_annotation_frames(self, video_index, starting_frame):
         annotation_file = self.anns[video_index]
-        data = np.load(annotation_file, allow_pickle=True)
-        labels = data.item().get(starting_frame)
+        data = np.load(annotation_file)
+        labels = data['arr_{}'.format(starting_frame - 1)]
 
         return labels
 
@@ -100,12 +100,9 @@ class JTADataset(Dataset):
             labels: mat of shape Frames x Tracklets x Bbs
         """
         frames, target = self.get_data(idx)
-
         clip = [io.imread(frame) for frame in frames]
-
-        target = convert_to_xyxy(target)
         if self.transform:
-            sample = self.transform(clip, target)
+            clip, target = self.transform(clip, target)
 
         return clip, target, idx
 
