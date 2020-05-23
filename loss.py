@@ -329,6 +329,25 @@ class DeTrackLoss(nn.Module):
         areas = (ymaxs - ymins + 1) * (xmaxs - xmins + 1)
         return areas
 
+    def compute_cls_targets(self, locations,targets):
+        #TODO: NEEDS TO BE HEAVILY TESTED
+        targets_new = targets.newtensor(targets)
+        targets_new = targets_new.squeeze(0)
+        targets_new = targets_new.unsqueeze(1)
+        locations_new = locations.newtensor(locations)
+        locations_new = locations_new.unsqueeze(2)
+        locations_new = locations_new.repeat(1, 1, targets_new.size()[2], 1)
+
+        c1 = locations_new[:, :, :, 0] <= targets_new[:, :, :, 2]
+        c2 = locations_new[:, :, :, 0] >= targets_new[:, :, :, 0]
+        c3 = locations_new[:, :, :, 1] <= targets_new[:, :, :, 3]
+        c4 = locations_new[:, :, :, 1] >= targets_new[:, :, :, 1]
+        mask = c1 + c2 + c3 + c4
+        mask = (mask==4).sum(dim=-1)
+        bbox_cls_targets = mask.float()
+        tracklet_cls_targets = mask.any(dim=0, keepdim=True).float()
+        return bbox_cls_targets, tracklet_cls_targets
+
     def forward(self, locations, cls_pred, box_pred, center_pred, targets):
         """
         We assume that the targets are of the
