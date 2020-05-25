@@ -27,11 +27,11 @@ class R2PlusOneD(nn.Module):
         self._base_model.layer2[0].conv1[0][3].stride = (1, 1, 1)
         self._base_model.layer2[0].downsample[0].stride = (1, 2, 2)
         self._base_model.layer3[0].conv1[0][3].stride = (1, 1, 1)
-        self._base_model.layer3[0].conv1[0][0].stride = (1, 1, 1)
-        self._base_model.layer3[0].downsample[0].stride = (1, 1, 1)
+        self._base_model.layer3[0].conv1[0][0].stride = (1, 2, 2)
+        self._base_model.layer3[0].downsample[0].stride = (1, 2, 2)
         self._base_model.layer4[0].conv1[0][3].stride = (1, 1, 1)
-        self._base_model.layer4[0].conv1[0][0].stride = (1, 1, 1)
-        self._base_model.layer4[0].downsample[0].stride = (1, 1, 1)
+        self._base_model.layer4[0].conv1[0][0].stride = (1, 2, 2)
+        self._base_model.layer4[0].downsample[0].stride = (1, 2, 2)
         return None
 
     def _prune_pool_fc(self):
@@ -41,3 +41,4 @@ class R2PlusOneD(nn.Module):
 
     def forward(self, input_batch):
         out = self._base_model(input_batch)
+        return out
