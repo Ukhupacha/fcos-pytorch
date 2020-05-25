@@ -331,10 +331,11 @@ class DeTrackLoss(nn.Module):
 
     def compute_cls_targets(self, locations,targets):
         #TODO: NEEDS TO BE HEAVILY TESTED
-        targets_new = targets.newtensor(targets)
+        targets_new = targets.new_tensor(targets)
         targets_new = targets_new.squeeze(0)
         targets_new = targets_new.unsqueeze(1)
         locations_new = locations.newtensor(locations)
+        locations_new = locations_new.unsqueeze(0)
         locations_new = locations_new.unsqueeze(2)
         locations_new = locations_new.repeat(1, 1, targets_new.size()[2], 1)
 
